@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Betreuungsplanung Niklas Tom-Hardy</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f5f5f5;
+    color: #333;
+    padding: 16px;
+    line-height: 1.4;
+  }
+  h1 { color: #1F4E78; margin: 0 0 4px; font-size: 22px; }
+  h2 { color: #1F4E78; margin: 0 0 10px; font-size: 18px; }
+  h3 { color: #1F4E78; margin: 0 0 8px; font-size: 15px; }
+  p.lead { margin: 0 0 16px; color: #666; font-size: 13px; }
+  .container { max-width: 1500px; margin: 0 auto; }
+  .panel {
+    background: white;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+
+  .presets button {
+    background: #1F4E78;
+    color: white;
+    border: none;
+    padding: 6px 11px;
+    margin: 3px 3px 0 0;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .presets button:hover { background: #2a5e8a; }
+  .presets button.alt { background: #6b6b6b; }
+  .presets button.alt:hover { background: #888; }
+
+  .controls-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 1100px) { .controls-grid { grid-template-columns: 1fr; } }
+
+  .salary-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .salary-row input[type=range] { flex: 1; }
+  .salary-val {
+    min-width: 80px;
+    text-align: right;
+    font-weight: 600;
+    color: #1F4E78;
+  }
+
+  .day-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .day-table td, .day-table th {
+    border: 1px solid #ddd;
+    padding: 4px 6px;
+  }
+  .day-table th {
+    background: #f0f0f0;
+    font-weight: 600;
+    text-align: left;
+  }
+  .day-table select, .day-table input[type=number], .day-table input[type=time] {
+    width: 100%;
+    border: 1px solid #ccc;
+    padding: 2px 4px;
+    font-size: 12px;
+    background: white;
+  }
+  .day-table input[type=checkbox] { transform: scale(1.1); }
+  .day-table .day-name { font-weight: 600; min-width: 32px; }
+
+  .summary {
+    margin-top: 6px;
+    padding: 5px 8px;
+    background: #E2EFDA;
+    border-radius: 4px;
+    font-weight: 600;
+    color: #1F4E78;
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* Schedule */
+  .schedule-wrap { overflow-x: auto; }
+  .schedule {
+    border-collapse: collapse;
+    font-size: 10px;
+    min-width: 100%;
+    font-family: "Segoe UI", Arial, sans-serif;
+  }
+  .schedule th, .schedule td {
+    border: 1px solid #b8b8b8;
+    padding: 2px 3px;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .schedule th { color: white; background: #1F4E78; padding: 4px; font-size: 11px; }
+  .schedule td.time-col { background: #D9E1F2; color: #1F4E78; font-weight: 600; min-width: 46px; }
+  .schedule .subhead { background: #D9E1F2; color: #1F4E78; font-weight: 600; }
+
+  /* Income */
+  .income {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13px;
+  }
+  .income td, .income th {
+    border: 1px solid #ddd;
+    padding: 6px 10px;
+  }
+  .income th { background: #FFF2CC; font-weight: 600; }
+  .income .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .income .total { background: #E2EFDA; font-weight: bold; }
+  .income .cost { background: #FCE4D6; }
+  .income .netnet { background: #92D050; font-weight: bold; }
+  .income .label { font-weight: 600; }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 11px;
+    margin-top: 8px;
+    color: #555;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .legend-swatch {
+    width: 14px;
+    height: 14px;
+    border: 1px solid #999;
+    display: inline-block;
+  }
+
+  .note { font-size: 11px; color: #666; margin-top: 6px; font-style: italic; }
+  .warn { color: #b22; font-weight: bold; }
+  .tm-row.disabled input[type=time] { opacity: 0.4; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Betreuungsplanung Niklas Tom-Hardy – interaktiv</h1>
+  <p class="lead">
+    Wähle Modus und Stunden je Tag für Paul und Dominique, plus Tagesmutter-Zeiten.
+    Wochenplan, Einkommen und TM-Kosten aktualisieren sich automatisch.
+    Alle Berechnungen offline im Browser.
+  </p>
+
+  <div class="panel presets">
+    <strong>Presets:</strong>
+    <button onclick="applyPreset('v1')">V1 Beide Vollzeit</button>
+    <button onclick="applyPreset('v2')">V2 Dom 50%</button>
+    <button onclick="applyPreset('v3')">V3 Beide 35h</button>
+    <button onclick="applyPreset('v4')">V4 Paul 28h</button>
+    <button onclick="applyPreset('v5')">V5 Paul 21h</button>
+    <button onclick="applyPreset('v6')">V6 TM 5d Vollzeit</button>
+    <button onclick="applyPreset('v7')">V7 TM 5d 35h</button>
+    <button onclick="applyPreset('v8')">V8 TM 3d Paul28</button>
+    <button onclick="applyPreset('v9')">V9 TM 2d Paul21</button>
+    <button onclick="applyPreset('v10')">V10 Paul35-4d</button>
+    <button onclick="applyPreset('v11')">V11</button>
+    <button onclick="applyPreset('v12')">V12</button>
+    <button class="alt" onclick="applyPreset('reset')">Reset (alle frei)</button>
+  </div>
+
+  <div class="panel">
+    <div class="controls-grid">
+      <!-- Paul -->
+      <div>
+        <h3>Paul</h3>
+        <div class="salary-row">
+          <span>Vollzeit-Brutto/Jahr:</span>
+          <input type="range" id="paulSalary" min="40000" max="200000" step="1000" value="96000">
+          <span class="salary-val" id="paulSalaryVal">96.000 €</span>
+        </div>
+        <table class="day-table" id="paulTable"></table>
+        <div class="summary">
+          <span>Stunden/Woche:</span>
+          <span id="paulHoursSum">0 h</span>
+        </div>
+      </div>
+      <!-- Dominique -->
+      <div>
+        <h3>Dominique</h3>
+        <div class="salary-row">
+          <span>Vollzeit-Brutto/Jahr:</span>
+          <input type="range" id="domSalary" min="40000" max="200000" step="1000" value="84000">
+          <span class="salary-val" id="domSalaryVal">84.000 €</span>
+        </div>
+        <table class="day-table" id="domTable"></table>
+        <div class="summary">
+          <span>Stunden/Woche:</span>
+          <span id="domHoursSum">0 h</span>
+        </div>
+      </div>
+      <!-- Tagesmutter -->
+      <div>
+        <h3>Tagesmutter</h3>
+        <div style="font-size:12px;color:#666;margin-bottom:8px;">
+          Anlage 1a Landkreis Tübingen ('unter 3 J.'). Zeitfenster pro Tag.
+        </div>
+        <table class="day-table" id="tmTable"></table>
+        <div class="summary">
+          <span>Stunden/Woche:</span>
+          <span id="tmHoursSum">0 h</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Wochenplan – Paul / Dom / Niklas-Kontrolle</h2>
+    <div class="schedule-wrap">
+      <table class="schedule" id="schedule"></table>
+    </div>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Einkommen & Kosten</h2>
+    <div id="incomePanel"></div>
+    <div class="note">
+      Netto-Schätzung: Steuerklasse IV/IV, verheiratet, 1 Kind, 2026
+      (brutto-netto-rechner.info Näherung).
+      TM-Kosten gem. Anlage 1a Landkreis Tübingen, gültig 01.01.2026 – 31.08.2026, 'unter 3 J.'.
+      Einkommensgruppe = Brutto-Haushalt − 30 % gem. Satzung § 3 (2).
+    </div>
+  </div>
+</div>
+
+<script>
+// ----- Konstanten -----
+const DAYS = ["Mo", "Di", "Mi", "Do", "Fr"];
+const DAYS_LONG = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
+
+const SLOTS = (() => {
+  const arr = [];
+  for (let h = 7, m = 30; h < 18 || (h === 18 && m === 0); ) {
+    arr.push(`${pad(h)}:${pad(m)}`);
+    m += 30;
+    if (m === 60) { m = 0; h++; }
+    if (h === 17 && m === 30) { arr.push(`17:30`); break; }
+  }
+  return arr;
+})();
+// SLOTS = 07:30 .. 17:30 inkl. (21 slots, jeder 30min)
+
+const STATUS = {
+  OFF:       { label: "Büro",        color: "#4F81BD", textColor: "white", loc: "away" },
+  HO:        { label: "HO",          color: "#9BBB59", textColor: "white", loc: "home" },
+  PEND_TO:   { label: "→Büro",       color: "#BFBFBF", textColor: "#333",  loc: "away" },
+  PEND_HOME: { label: "→Home",       color: "#BFBFBF", textColor: "#333",  loc: "away" },
+  PAU_OFF:   { label: "Pause",       color: "#F2DCDB", textColor: "#333",  loc: "away" },
+  PAU_HOME:  { label: "Pause",       color: "#F8CBAD", textColor: "#333",  loc: "home" },
+  TM:        { label: "Tagesmutter", color: "#B284BE", textColor: "white", loc: "tm"   },
+  FREI:      { label: "Frei",        color: "#FFFFFF", textColor: "#999",  loc: "home" }
+};
+
+const COL_OK  = "#92D050";
+const COL_GAP = "#FF6B6B";
+
+// TM-Kosten Anlage 1a Tübingen (unter 3 J.) — Spalten = Gruppe I..VII
+const TM_KOSTEN = {
+  1: [0, 21, 42, 63, 85, 106, 127],
+  2: [0, 35, 71, 106, 141, 176, 212],
+  3: [0, 49, 99, 148, 197, 247, 296],
+  4: [0, 63, 127, 190, 254, 317, 381],
+  5: [0, 78, 155, 233, 310, 388, 465],
+  6: [0, 92, 183, 275, 367, 458, 550],
+  7: [0, 106, 212, 317, 423, 529, 635],
+  8: [0, 113, 226, 338, 451, 564, 677]
+};
+
+const GRP_LIMITS = [
+  { idx: 1, name: "I",   limit: 20000  },
+  { idx: 2, name: "II",  limit: 40000  },
+  { idx: 3, name: "III", limit: 60000  },
+  { idx: 4, name: "IV",  limit: 80000  },
+  { idx: 5, name: "V",   limit: 100000 },
+  { idx: 6, name: "VI",  limit: 120000 },
+  { idx: 7, name: "VII", limit: Infinity }
+];
+
+const MODES = ["Frei", "Office", "HO", "Hybrid"];
+
+// ----- Hilfen -----
+function pad(n) { return String(n).padStart(2, '0'); }
+function fmtEuro(n) {
+  return Math.round(n).toLocaleString('de-DE') + " €";
+}
+function tToMin(t) {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+function minToT(min) {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return `${pad(h)}:${pad(m)}`;
+}
+
+function hoursToBracket(h) {
+  if (h < 5) return null;
+  if (h <= 9) return 1;
+  if (h <= 14) return 2;
+  if (h <= 19) return 3;
+  if (h <= 24) return 4;
+  if (h <= 29) return 5;
+  if (h <= 34) return 6;
+  if (h <= 39) return 7;
+  return 8;
+}
+
+function incomeToGroup(bruttoYear) {
+  const haushalt = bruttoYear * 0.7;
+  for (const g of GRP_LIMITS) {
+    if (haushalt <= g.limit) return { idx: g.idx, name: g.name, hh: haushalt };
+  }
+  return { idx: 7, name: "VII", hh: haushalt };
+}
+
+function nettoFactor(bruttoMonth) {
+  if (bruttoMonth >= 8000) return 0.60;
+  if (bruttoMonth >= 7000) return 0.61;
+  if (bruttoMonth >= 6000) return 0.62;
+  if (bruttoMonth >= 5000) return 0.64;
+  if (bruttoMonth >= 4000) return 0.66;
+  if (bruttoMonth >= 3000) return 0.68;
+  return 0.70;
+}
+
+// ----- Tagesplan-Bauer -----
+function emptyDay() { return SLOTS.map(() => "FREI"); }
+
+function fillRange(plan, fromT, toT, status) {
+  const i1 = SLOTS.indexOf(fromT);
+  if (i1 < 0) return;
+  let i2 = SLOTS.indexOf(toT);
+  if (i2 < 0) i2 = SLOTS.length;
+  for (let i = i1; i < i2; i++) plan[i] = status;
+}
+
+function buildOfficeDay(plan, hours) {
+  if (hours <= 0) return;
+  fillRange(plan, "07:30", "08:00", "PEND_TO");
+  if (hours <= 6) {
+    const endMin = 8 * 60 + Math.round(hours * 60);
+    fillRange(plan, "08:00", minToT(endMin), "OFF");
+    fillRange(plan, minToT(endMin), minToT(endMin + 30), "PEND_HOME");
+  } else {
+    fillRange(plan, "08:00", "12:00", "OFF");
+    fillRange(plan, "12:00", "12:30", "PAU_OFF");
+    const remaining = hours - 4;
+    const endMin = 12 * 60 + 30 + Math.round(remaining * 60);
+    fillRange(plan, "12:30", minToT(endMin), "OFF");
+    fillRange(plan, minToT(endMin), minToT(endMin + 30), "PEND_HOME");
+  }
+}
+
+function buildHODay(plan, hours) {
+  if (hours <= 0) return;
+  if (hours <= 6) {
+    const endMin = 8 * 60 + Math.round(hours * 60);
+    fillRange(plan, "08:00", minToT(endMin), "HO");
+  } else {
+    fillRange(plan, "08:00", "12:00", "HO");
+    fillRange(plan, "12:00", "12:30", "PAU_HOME");
+    const remaining = hours - 4;
+    const endMin = 12 * 60 + 30 + Math.round(remaining * 60);
+    fillRange(plan, "12:30", minToT(endMin), "HO");
+  }
+}
+
+function buildHybridDay(plan, hours) {
+  // 4h Office vormittags + (hours-4)h HO nachmittags. Pause zwischen.
+  if (hours <= 4) { buildOfficeDay(plan, hours); return; }
+  fillRange(plan, "07:30", "08:00", "PEND_TO");
+  fillRange(plan, "08:00", "12:00", "OFF");
+  fillRange(plan, "12:00", "12:30", "PEND_HOME");
+  fillRange(plan, "12:30", "13:00", "PAU_HOME");
+  const ho_h = hours - 4;
+  const endMin = 13 * 60 + Math.round(ho_h * 60);
+  fillRange(plan, "13:00", minToT(endMin), "HO");
+}
+
+function buildDay(mode, hours) {
+  const plan = emptyDay();
+  if (mode === "Frei" || hours <= 0) return plan;
+  if (mode === "Office") buildOfficeDay(plan, hours);
+  else if (mode === "HO") buildHODay(plan, hours);
+  else if (mode === "Hybrid") buildHybridDay(plan, hours);
+  return plan;
+}
+
+// ----- Niklas-Coverage ableiten -----
+function labelOf(s) {
+  if (s === "HO") return "HO";
+  if (s === "FREI") return "frei";
+  if (s === "PAU_HOME") return "Pause";
+  return "?";
+}
+
+function deriveNiklas(paulPlan, domPlan, tmPlan) {
+  const niklas = {};
+  DAYS.forEach((d, di) => {
+    niklas[d] = SLOTS.map((t, i) => {
+      if (tmPlan[d][i] === "TM") return { label: "TM", color: COL_OK, gap: false };
+      const p = paulPlan[d][i];
+      const dp = domPlan[d][i];
+      const pHome = STATUS[p].loc === "home";
+      const dHome = STATUS[dp].loc === "home";
+      if (pHome && dHome) {
+        if (p === "FREI" && dp === "FREI") return { label: "Beide frei", color: COL_OK, gap: false };
+        return { label: `P:${labelOf(p)} D:${labelOf(dp)}`, color: COL_OK, gap: false };
+      }
+      if (pHome) return { label: `Paul ${labelOf(p)}`, color: COL_OK, gap: false };
+      if (dHome) return { label: `Dom ${labelOf(dp)}`, color: COL_OK, gap: false };
+      return { label: "LÜCKE!", color: COL_GAP, gap: true };
+    });
+  });
+  return niklas;
+}
+
+// ----- TM-Plan aus Inputs -----
+function buildTMPlan(tmInputs) {
+  const plan = {};
+  DAYS.forEach((d, i) => {
+    plan[d] = SLOTS.map(() => "FREI");
+    const tm = tmInputs[i];
+    if (!tm.enabled || !tm.from || !tm.to) return;
+    const fromMin = tToMin(tm.from);
+    const toMin = tToMin(tm.to);
+    if (toMin <= fromMin) return;
+    // auf 30-min-Raster runden
+    const fromAligned = Math.round(fromMin / 30) * 30;
+    const toAligned = Math.round(toMin / 30) * 30;
+    fillRange(plan[d], minToT(fromAligned), minToT(toAligned), "TM");
+  });
+  return plan;
+}
+
+function tmHoursFromPlan(tmPlan) {
+  let n = 0;
+  for (const d of DAYS) for (const s of tmPlan[d]) if (s === "TM") n++;
+  return n * 0.5;
+}
+
+// ----- DOM-Setup -----
+function buildPersonTable(prefix, defaults) {
+  const tbl = document.getElementById(prefix + "Table");
+  let html = `<tr><th>Tag</th><th>Modus</th><th>Std.</th></tr>`;
+  DAYS.forEach((d, i) => {
+    const def = defaults[i];
+    html += `<tr>
+      <td class="day-name">${d}</td>
+      <td>
+        <select class="${prefix}-mode" data-day="${i}">
+          ${MODES.map(m => `<option value="${m}" ${m === def.mode ? 'selected':''}>${m}</option>`).join('')}
+        </select>
+      </td>
+      <td><input type="number" class="${prefix}-hours" data-day="${i}"
+                 min="0" max="9" step="0.5" value="${def.hours}"></td>
+    </tr>`;
+  });
+  tbl.innerHTML = html;
+}
+
+function buildTMTable(defaults) {
+  const tbl = document.getElementById("tmTable");
+  let html = `<tr><th>Tag</th><th>An</th><th>Von</th><th>Bis</th></tr>`;
+  DAYS.forEach((d, i) => {
+    const def = defaults[i];
+    html += `<tr class="tm-row${def.enabled ? '' : ' disabled'}" data-row="${i}">
+      <td class="day-name">${d}</td>
+      <td><input type="checkbox" class="tm-on" data-day="${i}" ${def.enabled ? 'checked':''}></td>
+      <td><input type="time" class="tm-from" data-day="${i}" value="${def.from}" step="1800"></td>
+      <td><input type="time" class="tm-to" data-day="${i}" value="${def.to}" step="1800"></td>
+    </tr>`;
+  });
+  tbl.innerHTML = html;
+}
+
+// ----- Render Wochenplan -----
+function renderSchedule(paulPlan, domPlan, niklas) {
+  const tbl = document.getElementById("schedule");
+  let html = "<thead><tr><th>Zeit</th>";
+  DAYS_LONG.forEach(d => html += `<th colspan="3">${d}</th>`);
+  html += "</tr><tr><td class='subhead'></td>";
+  DAYS_LONG.forEach(_ => html += `<td class='subhead'>Paul</td><td class='subhead'>Dom</td><td class='subhead'>Niklas</td>`);
+  html += "</tr></thead><tbody>";
+
+  SLOTS.forEach((t, i) => {
+    html += `<tr><td class='time-col'>${t}</td>`;
+    DAYS.forEach(d => {
+      const ps = STATUS[paulPlan[d][i]];
+      const ds = STATUS[domPlan[d][i]];
+      const ns = niklas[d][i];
+      html += `<td style="background:${ps.color};color:${ps.textColor};">${ps.label}</td>`;
+      html += `<td style="background:${ds.color};color:${ds.textColor};">${ds.label}</td>`;
+      html += `<td style="background:${ns.color};color:#1a1a1a;font-weight:600;">${ns.label}</td>`;
+    });
+    html += "</tr>";
+  });
+  html += "</tbody>";
+  tbl.innerHTML = html;
+}
+
+function renderLegend() {
+  const items = [
+    ["Büro", STATUS.OFF.color],
+    ["HO (50% Eigen-Betreuung)", STATUS.HO.color],
+    ["Pendeln", STATUS.PEND_TO.color],
+    ["Pause @ Büro", STATUS.PAU_OFF.color],
+    ["Pause @ Zuhause", STATUS.PAU_HOME.color],
+    ["Tagesmutter", STATUS.TM.color],
+    ["Frei", STATUS.FREI.color],
+    ["Niklas: betreut", COL_OK],
+    ["Niklas: LÜCKE", COL_GAP]
+  ];
+  document.getElementById("legend").innerHTML = items.map(([t, c]) =>
+    `<span class="legend-item"><span class="legend-swatch" style="background:${c}"></span>${t}</span>`
+  ).join("");
+}
+
+// ----- Render Einkommen -----
+function renderIncome(state, paulHours, domHours, tmHours, niklasGapCount) {
+  const paulBruttoMon = state.paulSalary * paulHours / 40 / 12;
+  const domBruttoMon  = state.domSalary  * domHours / 40 / 12;
+  const hhBruttoMon   = paulBruttoMon + domBruttoMon;
+  const hhBruttoYear  = hhBruttoMon * 12;
+
+  const paulNetMon = paulBruttoMon * nettoFactor(paulBruttoMon);
+  const domNetMon  = domBruttoMon  * nettoFactor(domBruttoMon);
+  const hhNetMon   = paulNetMon + domNetMon;
+
+  const grp = incomeToGroup(hhBruttoYear);
+  const bracket = hoursToBracket(tmHours);
+  const tmCostMon = bracket ? TM_KOSTEN[bracket][grp.idx - 1] : 0;
+  const netNet = hhNetMon - tmCostMon;
+
+  const bracketLabel = bracket
+    ? ["", "5-9h", "10-14h", "15-19h", "20-24h", "25-29h", "30-34h", "35-39h", "40+h"][bracket]
+    : "—";
+
+  let html = `
+  <table class="income">
+    <tr>
+      <th></th><th>Std/W</th><th>Vollzeit-Brutto/J</th><th>Anteil</th>
+      <th>Brutto/Mon</th><th>Brutto/Jahr</th><th>Netto/Mon (≈)</th><th>Netto/Jahr (≈)</th>
+    </tr>
+    <tr>
+      <td class="label">Paul</td>
+      <td class="num">${paulHours.toFixed(1)}</td>
+      <td class="num">${fmtEuro(state.paulSalary)}</td>
+      <td class="num">${(paulHours/40*100).toFixed(0)} %</td>
+      <td class="num">${fmtEuro(paulBruttoMon)}</td>
+      <td class="num">${fmtEuro(paulBruttoMon*12)}</td>
+      <td class="num">${fmtEuro(paulNetMon)}</td>
+      <td class="num">${fmtEuro(paulNetMon*12)}</td>
+    </tr>
+    <tr>
+      <td class="label">Dominique</td>
+      <td class="num">${domHours.toFixed(1)}</td>
+      <td class="num">${fmtEuro(state.domSalary)}</td>
+      <td class="num">${(domHours/40*100).toFixed(0)} %</td>
+      <td class="num">${fmtEuro(domBruttoMon)}</td>
+      <td class="num">${fmtEuro(domBruttoMon*12)}</td>
+      <td class="num">${fmtEuro(domNetMon)}</td>
+      <td class="num">${fmtEuro(domNetMon*12)}</td>
+    </tr>
+    <tr class="total">
+      <td class="label">Haushalt gesamt</td>
+      <td class="num">${(paulHours+domHours).toFixed(1)}</td>
+      <td></td><td></td>
+      <td class="num">${fmtEuro(hhBruttoMon)}</td>
+      <td class="num">${fmtEuro(hhBruttoYear)}</td>
+      <td class="num">${fmtEuro(hhNetMon)}</td>
+      <td class="num">${fmtEuro(hhNetMon*12)}</td>
+    </tr>
+  </table>
+
+  <table class="income" style="margin-top:10px;max-width:680px;">
+    <tr><td class="label">Haushaltseinkommen lt. Satzung (Brutto -30%)</td>
+        <td class="num">${fmtEuro(grp.hh)}</td>
+        <td>Gruppe ${grp.name}</td></tr>
+    <tr><td class="label">TM-Stunden/Woche</td>
+        <td class="num">${tmHours.toFixed(1)} h</td>
+        <td>Bracket ${bracketLabel}</td></tr>
+    <tr class="cost"><td class="label">Tagesmutter-Kosten / Monat</td>
+        <td class="num">${fmtEuro(tmCostMon)}</td>
+        <td>${tmCostMon === 0 && tmHours > 0 && tmHours < 5
+            ? '<span class="warn">⚠ unter 5h: kein Tarif (zu wenig)</span>'
+            : ''}</td></tr>
+    <tr><td class="label">Netto-Haushalt / Monat</td>
+        <td class="num">${fmtEuro(hhNetMon)}</td><td></td></tr>
+    <tr class="netnet"><td class="label">Netto-Net (HH-Netto − TM)</td>
+        <td class="num">${fmtEuro(netNet)}</td>
+        <td>${fmtEuro(netNet*12)} / Jahr</td></tr>
+  </table>`;
+
+  if (niklasGapCount > 0) {
+    html += `<p class="warn" style="margin-top:10px;">
+      ⚠ Niklas hat ${niklasGapCount} Slot(s) à 30 Min ohne Betreuung – siehe rote Felder im Wochenplan!
+    </p>`;
+  }
+
+  document.getElementById("incomePanel").innerHTML = html;
+}
+
+// ----- State + Render -----
+function getState() {
+  const paulSalary = +document.getElementById("paulSalary").value;
+  const domSalary  = +document.getElementById("domSalary").value;
+  const paulDays = DAYS.map((d, i) => ({
+    mode:  document.querySelector(`.paul-mode[data-day="${i}"]`).value,
+    hours: +document.querySelector(`.paul-hours[data-day="${i}"]`).value || 0
+  }));
+  const domDays = DAYS.map((d, i) => ({
+    mode:  document.querySelector(`.dom-mode[data-day="${i}"]`).value,
+    hours: +document.querySelector(`.dom-hours[data-day="${i}"]`).value || 0
+  }));
+  const tmInputs = DAYS.map((d, i) => ({
+    enabled: document.querySelector(`.tm-on[data-day="${i}"]`).checked,
+    from:    document.querySelector(`.tm-from[data-day="${i}"]`).value,
+    to:      document.querySelector(`.tm-to[data-day="${i}"]`).value
+  }));
+  return { paulSalary, domSalary, paulDays, domDays, tmInputs };
+}
+
+function render() {
+  const state = getState();
+
+  // salary display
+  document.getElementById("paulSalaryVal").textContent = fmtEuro(state.paulSalary);
+  document.getElementById("domSalaryVal").textContent  = fmtEuro(state.domSalary);
+
+  // Tagesmutter row enable/disable visual
+  state.tmInputs.forEach((tm, i) => {
+    const row = document.querySelector(`.tm-row[data-row="${i}"]`);
+    if (row) row.classList.toggle("disabled", !tm.enabled);
+  });
+
+  // build plans
+  const paulPlan = {};
+  const domPlan = {};
+  DAYS.forEach((d, i) => {
+    paulPlan[d] = buildDay(state.paulDays[i].mode, state.paulDays[i].hours);
+    domPlan[d]  = buildDay(state.domDays[i].mode,  state.domDays[i].hours);
+  });
+  const tmPlan = buildTMPlan(state.tmInputs);
+  const niklas = deriveNiklas(paulPlan, domPlan, tmPlan);
+
+  // hour sums
+  const paulHours = state.paulDays.reduce((s, d) => s + (d.mode === "Frei" ? 0 : d.hours), 0);
+  const domHours  = state.domDays.reduce ((s, d) => s + (d.mode === "Frei" ? 0 : d.hours), 0);
+  const tmHours   = tmHoursFromPlan(tmPlan);
+
+  document.getElementById("paulHoursSum").textContent = paulHours.toFixed(1) + " h";
+  document.getElementById("domHoursSum").textContent  = domHours.toFixed(1)  + " h";
+  document.getElementById("tmHoursSum").textContent   = tmHours.toFixed(1)   + " h";
+
+  // gap count
+  let gapCount = 0;
+  DAYS.forEach(d => niklas[d].forEach(n => { if (n.gap) gapCount++; }));
+
+  renderSchedule(paulPlan, domPlan, niklas);
+  renderIncome(state, paulHours, domHours, tmHours, gapCount);
+}
+
+// ----- Presets -----
+const PRESETS = {
+  v1: {
+    paulSalary: 96000, domSalary: 84000,
+    paul: [
+      {mode:"Office", hours:8}, {mode:"Office", hours:8}, {mode:"Hybrid", hours:8},
+      {mode:"HO", hours:8},      {mode:"HO", hours:8}
+    ],
+    dom: [
+      {mode:"HO", hours:8}, {mode:"HO", hours:8}, {mode:"Hybrid", hours:8},
+      {mode:"Office", hours:8}, {mode:"Office", hours:8}
+    ],
+    tm: [{enabled:false},{enabled:false},{enabled:false},{enabled:false},{enabled:false}]
+  },
+  v2: {
+    paulSalary: 96000, domSalary: 84000,
+    paul: [
+      {mode:"Office", hours:8}, {mode:"Office", hours:8}, {mode:"Hybrid", hours:8},
+      {mode:"HO", hours:8},      {mode:"HO", hours:8}
+    ],
+    dom: [
+      {mode:"HO", hours:4}, {mode:"HO", hours:4}, {mode:"HO", hours:4},
+      {mode:"Office", hours:4}, {mode:"Office", hours:4}
+    ],
+    tm: [{enabled:false},{enabled:false},{enabled:false},{enabled:false},{enabled:false}]
+  },
+  v3: {
+    paulSalary: 96000, domSalary: 84000,
+    paul: [
+      {mode:"Office", hours:7}, {mode:"Office", hours:7}, {mode:"Hybrid", hours:7},
+      {mode:"HO", hours:7},      {mode:"HO", hours:7}
+    ],
+    dom: [
+      {mode:"HO", hours:7}, {mode:"HO", hours:7}, {mode:"Hybrid", hours:7},
+      {mode:"Office", hours:7}, {mode:"Office", hours:7}
+    ],
+    tm: [{enabled:false},{enabled:false},{enabled:false},{enabled:false},{enabled:false}]
+  },
+  v4: {
+    paulSalary: 96000, domSalary: 84000,
+    paul: [
+      {mode:"Office", hours:7}, {mode:"Office", hours:7}, {mode:"Hybrid", hours:7},
+      {mode:"HO", hours:7},      {mode:"Frei", hours:0}
+    ],
+    dom: [
+      {mode:"HO", hours:8}, {mode:"HO", hours:8}, {mode:"Hybrid", hours:8},
+      {mode:"Office", hours:8}, {mode:"Office", hours:8}
+    ],
+    tm: [{enabled:false},{enabled:false},{enabled:false},{enabled:false},{enabled:false}]
+  },
+  v5: {
+    paulSalary: 96000, domSalary: 84000,
+    paul: [
+      {mode:"Office", hours:7}, {mode:"Office", hours:7}, {mode:"HO", hours:7},
+      {mode:"Frei", hours:0},   {mode:"Frei", hours:0}
+    ],
+    dom: [
+      {mode:"HO", hours:8}, {mode:"HO", hours:8}, {mode:"Hybrid", hours:8},
+      {mode:"Office", hours:8}, {mode:"Office", hours:8}
+    ],
+    tm: [{enabled:false},{enabled:false},{enabled:false},{enabled:false},{enabled:false}]
+  },
+  v6: {
+    paulSalary: 96000, domSalary: 84000,
+    paul: [
+      {mode:"Office", hours:8}, {mode:"Office", hours:8}, {mode:"Hybrid", hours:8},
+      {mode:"HO", hours:8}, {mode:"HO", hours:8}
+    ],
+    dom: [
+      {mode:"HO", hours:8}, {mode:"HO", hours:8}, {mode:"Hybrid", hours:8},
+      {mode:"Office", hours:8}, {mode:"Office", hours:8}
+    ],
+    tm: DAYS.map(_ => ({enabled:true, from:"07:30", to:"13:00"}))
+  },
+  v7: {
+    paulSalary: 96000, domSalary: 84000,
+    paul: [
+      {mode:"Office", hours:7}, {mode:"Office", hours:7}, {mode:"Hybrid", hours:7},
+      {mode:"HO", hours:7}, {mode:"HO", hours:7}
+    ],
+    dom: [
+      {mode:"HO", hours:7}, {mode:"HO", hours:7}, {mode:"Hybrid", hours:7},
+      {mode:"Office", hours:7}, {mode:"Office", hours:7}
+    ],
+    tm: DAYS.map(_ => ({enabled:true, from:"07:30", to:"13:00"}))
+  },
+  v8: {
+    paulSalary: 96000, domSalary: 84000,
+    paul: [
+      {mode:"Office", hours:7}, {mode:"Frei", hours:0}, {mode:"Office", hours:7},
+      {mode:"Hybrid", hours:7}, {mode:"HO", hours:7}
+    ],
+    dom: [
+      {mode:"HO", hours:4}, {mode:"HO", hours:4}, {mode:"Office", hours:4},
+      {mode:"HO", hours:4}, {mode:"Office", hours:4}
+    ],
+    tm: [
+      {enabled:true,  from:"07:30", to:"13:00"},
+      {enabled:false, from:"07:30", to:"13:00"},
+      {enabled:true,  from:"07:30", to:"13:00"},
+      {enabled:false, from:"07:30", to:"13:00"},
+      {enabled:true,  from:"07:30", to:"13:00"}
+    ]
+  },
+  v9: {
+    paulSalary: 96000, domSalary: 84000,
+    paul: [
+      {mode:"Office", hours:7}, {mode:"Frei", hours:0}, {mode:"Office", hours:7},
+      {mode:"Frei", hours:0},   {mode:"HO", hours:7}
+    ],
+    dom: [
+      {mode:"Office", hours:4}, {mode:"HO", hours:4}, {mode:"Office", hours:4},
+      {mode:"HO", hours:4},     {mode:"HO", hours:4}
+    ],
+    tm: [
+      {enabled:true,  from:"07:30", to:"13:00"},
+      {enabled:false, from:"07:30", to:"13:00"},
+      {enabled:true,  from:"07:30", to:"13:00"},
+      {enabled:false, from:"07:30", to:"13:00"},
+      {enabled:false, from:"07:30", to:"13:00"}
+    ]
+  },
+  v10: {
+    paulSalary: 96000, domSalary: 84000,
+    paul: [
+      {mode:"HO", hours:9}, {mode:"HO", hours:9}, {mode:"Office", hours:9},
+      {mode:"Office", hours:8}, {mode:"Frei", hours:0}
+    ],
+    dom: [
+      {mode:"Office", hours:8}, {mode:"Office", hours:8}, {mode:"Frei", hours:0},
+      {mode:"HO", hours:4}, {mode:"Frei", hours:0}
+    ],
+    tm: [
+      {enabled:true,  from:"07:30", to:"15:30"},
+      {enabled:true,  from:"07:30", to:"15:30"},
+      {enabled:false, from:"07:30", to:"13:00"},
+      {enabled:true,  from:"07:30", to:"11:30"},
+      {enabled:false, from:"07:30", to:"13:00"}
+    ]
+  },
+  v11: {
+    paulSalary: 96000, domSalary: 84000,
+    paul: [
+      {mode:"HO", hours:9}, {mode:"HO", hours:9}, {mode:"Office", hours:9},
+      {mode:"Office", hours:8}, {mode:"Frei", hours:0}
+    ],
+    dom: [
+      {mode:"Office", hours:8}, {mode:"Office", hours:8}, {mode:"Frei", hours:0},
+      {mode:"HO", hours:4}, {mode:"Frei", hours:0}
+    ],
+    tm: [
+      {enabled:true,  from:"07:30", to:"15:30"},
+      {enabled:true,  from:"07:30", to:"15:30"},
+      {enabled:false, from:"07:30", to:"13:00"},
+      {enabled:false, from:"07:30", to:"11:30"},
+      {enabled:false, from:"07:30", to:"13:00"}
+    ]
+  },
+  v12: {
+    paulSalary: 96000, domSalary: 84000,
+    paul: [
+      {mode:"HO", hours:9}, {mode:"HO", hours:9}, {mode:"Office", hours:9},
+      {mode:"Office", hours:8}, {mode:"Frei", hours:0}
+    ],
+    dom: [
+      {mode:"Office", hours:8}, {mode:"Office", hours:8}, {mode:"Frei", hours:0},
+      {mode:"HO", hours:8}, {mode:"Frei", hours:0}
+    ],
+    tm: [
+      {enabled:true,  from:"07:30", to:"15:30"},
+      {enabled:true,  from:"07:30", to:"15:30"},
+      {enabled:false, from:"07:30", to:"13:00"},
+      {enabled:true,  from:"07:30", to:"15:30"},
+      {enabled:false, from:"07:30", to:"13:00"}
+    ]
+  },
+  reset: {
+    paulSalary: 96000, domSalary: 84000,
+    paul: [
+      {mode:"Frei", hours:0}, {mode:"Frei", hours:0}, {mode:"Frei", hours:0},
+      {mode:"Frei", hours:0}, {mode:"Frei", hours:0}
+    ],
+    dom: [
+      {mode:"Frei", hours:0}, {mode:"Frei", hours:0}, {mode:"Frei", hours:0},
+      {mode:"Frei", hours:0}, {mode:"Frei", hours:0}
+    ],
+    tm: [{enabled:false, from:"07:30", to:"13:00"},{enabled:false, from:"07:30", to:"13:00"},
+         {enabled:false, from:"07:30", to:"13:00"},{enabled:false, from:"07:30", to:"13:00"},
+         {enabled:false, from:"07:30", to:"13:00"}]
+  }
+};
+
+function applyPreset(name) {
+  const p = PRESETS[name];
+  if (!p) return;
+  document.getElementById("paulSalary").value = p.paulSalary;
+  document.getElementById("domSalary").value  = p.domSalary;
+  // ensure TM defaults have from/to
+  const tmFilled = p.tm.map(t => ({
+    enabled: !!t.enabled,
+    from: t.from || "07:30",
+    to:   t.to   || "13:00"
+  }));
+  buildPersonTable("paul", p.paul);
+  buildPersonTable("dom",  p.dom);
+  buildTMTable(tmFilled);
+  attachListeners();
+  render();
+}
+
+function attachListeners() {
+  document.querySelectorAll("input, select").forEach(el => {
+    el.removeEventListener("input", render);
+    el.removeEventListener("change", render);
+    el.addEventListener("input", render);
+    el.addEventListener("change", render);
+  });
+}
+
+// ----- Init -----
+applyPreset("v12");
+renderLegend();
+</script>
+</body>
+</html>
